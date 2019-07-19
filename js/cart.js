@@ -30,7 +30,7 @@ $(function () {
               <div class="cell col-1 tc lh70">
                 <div class="item-count">
                   <a href="javascript:void(0);" class="reduce fl">-</a>
-                  <input autocomplete="off" type="text" class="number fl" value="1">
+                  <input autocomplete="off" type="text" class="number fl" value="${e.number}">
                   <a href="javascript:void(0);" class="add fl">+</a>
                 </div>
               </div>
@@ -61,9 +61,9 @@ $(function () {
     // 总金额
     let totalMoney = 0;
     // 选取小盒子里面的input，有多个相同属性，选取type里面的checbox
-    $('.item-list inpur[type=checkbox]:checked').each((i, e) => {
+    $('.item-list input[type=checkbox]:checked').each((i, e) => {
       // 根据id获取到item-list里面的子元素item，并且attr选取里面的ID
-      let id = parseFloat($(e).parent('.item').attr('data-id'));
+      let id = parseInt($(e).parents('.item').attr('data-id'));
       arr.forEach(e => {
         if (id === e.pID) {
           // 总价
@@ -103,25 +103,23 @@ $(function () {
 
   // 实现委托加减
   // 获取列表中的所有加
-  $('.item-list').on('click', 'add', function () {
-
+  $('.item-list').on('click', '.add', function () {
     //  得到旧数据
-    let oldVal = parseInt($('this').siblings('input').val());
+    // 加
+    let oldVal = parseInt($(this).siblings('input').val());
     oldVal++;
     if (oldVal > 1) {
       $(this).siblings('.reduce').removeClass('disabled');
     }
-
     // 设置回去
     $(this).siblings('input').val(oldVal);
     // 存储本地数据到里面去，更新
     // 判断点击按钮是否对应ID
-    let id = parseInt($(this).parent('.item').attr('data-id'));
+    let id = parseInt($(this).parents('.item').attr('data-id'));
     let obj = arr.find(e => {
       return e.pID === id;
     });
-
-    // 更新对应的数据
+    //更新对应的数据
     obj.number = oldVal;
     // 覆盖旧数据
     let jsonStr = JSON.stringify(arr);
@@ -129,6 +127,56 @@ $(function () {
     // 重新计算总数和总价
     countAndMoney();
     // 对应的商品的钱也要计算
-    $(this).parents('.item').find('')
+    $(this).parents('.item').find('.computed').text(obj.price * obj.number);
+    // })
   });
+  // 减
+  $('.item-list').on('click', '.reduce', function () {
+    let oldVal = parseInt($(this).siblings('input').val());
+    // 等于1不能点击
+    if (oldVal === 1) {
+      return;
+    }
+    oldVal--;
+    if (oldVal === 1) {
+      $(this).addClass('disabled');
+    }
+    $(this).siblings('input').val(oldVal);
+    let id = parseInt($(this).parents('.item').attr('data-id'));
+    let obj = arr.find(e => {
+      return e.pID === id;
+    });
+    obj.number = oldVal;
+    let jsonStr = JSON.stringify(arr);
+    localStorage.setItem('wbData', jsonStr);
+    // 重新计算总数和总价
+    countAndMoney();
+    $(this).parents('.item').find('.computed').text(obj.price * obj.number);
+  })
+
+  // 实现删除
+  $('.item-list').on('click', 'item-del', function () {
+    let _this = this;
+    $('#dialog-confirm').dialog({
+      resizable: false,
+      height: 200,
+      modal: true,
+      buttons: {
+        '确认': function () {
+          $(this).dialog('close');
+          $(_this).parents('.item').remove();
+          let id = parseInt($(_this).parents('.item').attr('data-id'));
+          let index = arr.findIndex((e) => {
+            return e.pID === id
+          })
+          arr.splice(index, 1);
+          let jsonStr = JSON.stringify(arr);
+          localStorage.setItem('wbData', jsonStr);
+        },
+        '取消': function () {
+          $(this).dialog('close');
+        }
+      }
+    })
+  })
 });
